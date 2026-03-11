@@ -1,0 +1,31 @@
+## --- OCaml 编译产物 ---
+# 字节码对象文件
+*.cmo
+*.cmi
+*.cmt
+*.cmti
+*.cmx
+*.cma
+*.cmxa
+*.cmxs
+
+# 库文件与共享对象
+*.o
+*.a
+*.so
+*.lib
+*.dll
+
+
+## --- 构建工具缓存 ---
+# 如果你以后使用 Dune (推荐)
+_build/
+.merlin
+*.install
+
+## --- 操作系统与编辑器 ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp

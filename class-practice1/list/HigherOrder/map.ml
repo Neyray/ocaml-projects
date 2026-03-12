@@ -3,4 +3,3 @@ let rec map f lst=
     match lst with
     | [] -> []
     | h :: t -> f h :: map f t
-

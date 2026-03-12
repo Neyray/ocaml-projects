@@ -4,4 +4,5 @@ let rec length sum lst=
     | [] -> sum
     | _ :: t -> length (sum+1) t
 
- 
+let () =
+  Printf.printf "source2 长度: %d\n" (length 0 [1; 2; 3; 4; 5])

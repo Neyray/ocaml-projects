@@ -10,4 +10,5 @@ let rec list_max_iter lst =
       | [] ->curr_max
       | x :: xs -> aux (max curr_max x) xs
     in
+    (*h是从原始列表中剥离出来的具体数值*)
     aux h t

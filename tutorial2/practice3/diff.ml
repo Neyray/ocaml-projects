@@ -3,6 +3,7 @@ let rec diff lst=
   let rec aux lst acc=
   match lst with
   | [] -> List.rev acc
+  (*把整个 xb :: _ 这个子列表绑定到名字 t，这样递归时直接传 t，相当于从 xb 开始继续处理，避免重复访问元素*)
   | xa::(xb::_ as t) -> aux t ((xb-xa)::acc)
   (*需要倒转列表*)
   | [_] -> List.rev acc

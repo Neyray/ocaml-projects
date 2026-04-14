@@ -13,7 +13,7 @@ type bank_account={
   id:int;
   mutable balance:int;
   (*这不是嵌套类型，只是把自定义类型当作列表的元素类型。相当于int list*)
-  mutable transactions:transaction list;
+  mutable transactions:transaction list;(*可以理解为C++的结构体数组*)
 }
 
 (*创建账号*)
@@ -30,7 +30,7 @@ let deposit:bank_account -> int -> unit =fun b amount ->
   end 
 
 (*取款*)
-let withdraw:bank_account -> int -> unit=fun b amount->
+let withdraw:bank_account -> int -> unit=fun b amount ->
   if amount<0 then raise InvalidWithdrawal
   else if amount>b.balance then raise InsufficientFunds
   else begin

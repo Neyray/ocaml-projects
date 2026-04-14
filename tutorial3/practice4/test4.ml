@@ -11,7 +11,7 @@ module Pikachu : Pokemon = struct
   let name   = "Pikachu"
   let hp     = ref 35
   let attack = 55
-  let take_damage dmg = hp := !hp - dmg
+  let take_damage dmg = hp := !hp - dmg(*:=表示给hp赋值，！是解引用*)
 end
 
 (* 小火龙 *)

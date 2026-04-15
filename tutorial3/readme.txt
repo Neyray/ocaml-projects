@@ -10,15 +10,22 @@
 
 
 3.(* type 里用 mutable，修改用 <- *)
+格式：mutable 变量名 ：变量类型
+
 type account = {
   mutable balance : int
 }
 let acc = { balance = 100 }
 acc.balance <- 200        (* <- 修改 mutable 字段 *)
 
+
+
 (* ref 修改用 := *)
+格式：val 变量名：变量类型 ref
+
 let hp = ref 100
 hp := !hp - 10            (* := 修改 ref，!hp 读取 ref *)
+
 
 
 4.mutable 只能在 type（record）的字段里声明

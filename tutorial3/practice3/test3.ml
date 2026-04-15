@@ -20,6 +20,7 @@ end
 
 module MyMap : Map = struct
   (* 用关联列表实现：每个元素是 (键, 值) 的元组 *)
+  (*将这个t实例化为list*)
   type ('k, 'v) t = ('k * 'v) list
 
   (* 空映射就是空列表 *)

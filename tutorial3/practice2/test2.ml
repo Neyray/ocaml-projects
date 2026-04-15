@@ -13,7 +13,7 @@ type bank_account={
   id:int;
   mutable balance:int;
   (*这不是嵌套类型，只是把自定义类型当作列表的元素类型。相当于int list*)
-  mutable transactions:transaction list;(*可以理解为C++的结构体数组*)
+  mutable transactions:transaction list;(*可以理解为C++的结构体数组vector<struct>*)
 }
 
 (*创建账号*)

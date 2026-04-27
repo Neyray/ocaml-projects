@@ -1,0 +1,6 @@
+(library
+ (name lex_project)
+ (modules ast lexer parser))
+
+(ocamllex lexer)
+(ocamlyacc parser)

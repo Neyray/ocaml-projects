@@ -1,12 +1,15 @@
 (*parser.ml*)
 (*写递归下降Parser*)
+(*parser 的任务不是"判断这串 token 合不合法"，而是把 token list 转换成一棵树。
+这棵树就是 AST，而树的节点类型定义在 ast.ml 里*)
+
 open Ast
 open Token
 
 (* 返回 (term, 剩余tokens) *)
 let rec parse_term tokens=
   match tokens with
-  | TRUE :: rest -> (TmTrue,rest)
+  | TRUE :: rest -> (TmTrue,rest) (* 返回 TmTrue 这个AST节点 *)
   | FALSE :: rest -> (TmFalse,rest)
   | ZERO :: rest -> (TmZero,rest)
   | IF :: rest ->

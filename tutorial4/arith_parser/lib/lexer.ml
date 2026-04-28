@@ -1,5 +1,6 @@
 (*lexer.ml*)
 (*手写词法分析*)
+(*做真正的转换工作：字符串 → token list*)
 open Token
 
 let tokenize s =

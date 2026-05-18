@@ -1,19 +1,27 @@
 open Interpreterlib
 open Ast
 
-let rec string_of_expr (e : expr) : string = 
+let rec string_of_expr (e : expr) : string =
   match e with
   | Int n -> Printf.sprintf "Int %d" n
+  | Bool b -> Printf.sprintf "Bool %b" b
+  | Var x -> Printf.sprintf "Var %s" x
   | Binop (binop, e1, e2) ->
-    let binop_str = 
-      match binop with 
+    let binop_str =
+      match binop with
       | Add -> "Add"
-      | Mul -> "Mul"
       | Sub -> "Sub"
-      | Div -> "Div"
+      | Mul -> "Mul"
+      | Leq -> "Leq"
     in
-    Printf.sprintf "Binop (%s, %s, %s)" binop_str (string_of_expr e1) (string_of_expr e2)
-
+    Printf.sprintf "Binop (%s, %s, %s)"
+      binop_str (string_of_expr e1) (string_of_expr e2)
+  | If (e1, e2, e3) ->
+    Printf.sprintf "If (%s, %s, %s)"
+      (string_of_expr e1) (string_of_expr e2) (string_of_expr e3)
+  | Let (x, e1, e2) ->
+    Printf.sprintf "Let (%s, %s, %s)"
+      x (string_of_expr e1) (string_of_expr e2)
 
 let parse s : expr =
   let lexbuf = Lexing.from_string s in
@@ -21,69 +29,57 @@ let parse s : expr =
   ast
 
 
-(* check if an expression is a value (i.e., fully evaluated) *)
+(* Small-step semantics *)
+
 let is_value : expr -> bool = function
-  | Int _ -> true
-  | Binop _ -> false
+  | Int _ | Bool _ -> true
+  | _ -> false
 
-
-(*Small Step*)
-(* takes a single step of evaluation of [e] *)
 let rec step : expr -> expr = function
-  | Int _ -> failwith "Does not step on a number"
-
-  (* No need for further stepping if both sides are already values *)
-  | Binop (binop, e1, e2) when is_value e1 && is_value e2 -> 
+  | Int _ | Bool _ -> failwith "Does not step on a value"
+  | Var _ -> failwith "Unbound variable"
+  | Binop (binop, e1, e2) when is_value e1 && is_value e2 ->
     step_binop binop e1 e2
-
-  (* Evaluate the right side of the binop if the left side is a value *)
   | Binop (binop, e1, e2) when is_value e1 -> Binop (binop, e1, step e2)
-
-  (* Leftmost step for binop *)
   | Binop (binop, e1, e2) -> Binop (binop, step e1, e2)
+  | If _ -> failwith "TODO: implement if in step (Task 2)"
+  | Let _ -> failwith "TODO: implement let in step (Task 3)"
 
-
-(* implement the primitive operation [v1 binop v2].
-   Requires: [v1] and [v2] are both values. *)
 and step_binop binop v1 v2 = match binop, v1, v2 with
   | Add, Int a, Int b -> Int (a + b)
   | Sub, Int a, Int b -> Int (a - b)
   | Mul, Int a, Int b -> Int (a * b)
-  | Div, Int a, Int b when b <> 0 -> Int (a / b)
-  | Div, Int _, Int 0 -> failwith "Division by zero"
+  | Leq, Int a, Int b -> Bool (a <= b)
   | _ -> failwith "Operator and operand type mismatch"
 
-
 (* fully evaluate [e] to a value [v] *)
-(*反复 step 直到变成值*)
 let rec eval (e : expr) : expr =
   if is_value e then e else
-    e |> step |> eval   (* ！！！ |> 是 OCaml 的管道运算符，x |> f 等价于 f x。所以 e |> step |> eval 就是 eval (step e)。*)
+    e |> step |> eval
 
-
-(* interpret [s] by lexing -> parsing -> evaluating and converting the result to a string *)
-(*完整的解释器流水线,这是整个解释器的总入口。*)
-let interp (s : string) : string = 
+let interp (s : string) : string =
   s |> parse |> eval |> string_of_expr
 
 
+(* Big-step semantics *)
 
-(*Big Step*)
 let rec eval_big (e : expr) : expr = match e with
-  | Int _ -> e
+  | Int _ | Bool _ -> e
+  | Var _ -> failwith "Unbound variable"
   | Binop (binop, e1, e2) -> eval_bop binop e1 e2
+  | If _ -> failwith "TODO: Task 2"
+  | Let _ -> failwith "TODO: Task 3"
 
 and eval_bop binop e1 e2 = match binop, eval_big e1, eval_big e2 with
   | Add, Int a, Int b -> Int (a + b)
   | Sub, Int a, Int b -> Int (a - b)
   | Mul, Int a, Int b -> Int (a * b)
-  | Div, Int a, Int b when b <> 0 -> Int (a / b)
-  | Div, Int _, Int 0 -> failwith "Division by zero"
+  | Leq, Int a, Int b -> Bool (a <= b)
   | _ -> failwith "Operator and operand type mismatch"
 
-let interp_big (s : string) : string = 
+let interp_big (s : string) : string =
   s |> parse |> eval_big |> string_of_expr
-  
+
 let () =
   let filename = "test/simpl_test1.in" in
   (* let filename = "test/simpl_test2.in" in *)
@@ -97,5 +93,5 @@ let () =
   let res = interp_big file_content in
   Printf.printf "Result of interpreting %s with big-step model:\n%s\n\n" filename res; *)
 
-  let ast = parse file_content in 
-  Printf.printf "AST: %s\n" (string_of_expr ast);
+  let ast = parse file_content in
+  Printf.printf "AST: %s\n" (string_of_expr ast)

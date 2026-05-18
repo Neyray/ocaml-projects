@@ -1,0 +1,10 @@
+(lang dune 3.17)
+
+(using menhir 3.0)
+
+(name interpreter_project)
+
+(package
+ (name interpreter_project))
+
+(authors "Yang Yuanzhao <yang_yuanzhao@whu.edu.cn>")

@@ -317,8 +317,8 @@ let interp_big s = s |> parse |> eval_big |> string_of_expr
 | Task 1 | SimPL 解析（AST + lexer + parser + `string_of_expr`） | `ast.ml`、`lexer.mll`、`parser.mly`、`main.ml` | `project1/` |
 | Task 2 | `if` 语句的求值 | `main.ml`（`step`、`eval_big` 的 `If` 分支） | `project2/` |
 | Task 3 | `let` 语句的基本求值（先放 `subst` 占位） | `main.ml`（`step`、`eval_big` 的 `Let` 分支） | `project3/` |
-| Task 4 | 真正实现 `subst`（替换） | `main.ml` | `project3/` |
-| Task 5 | Lambda Calculus 解释器 + capture-avoiding subst | 全套文件 | `project3/` |
+| Task 4 | 真正实现 `subst`（替换） | `main.ml` | `project4/` |
+| Task 5 | Lambda Calculus 解释器 + capture-avoiding subst | 全套文件 | `project5/`（待建） |
 
 ---
 
@@ -428,13 +428,26 @@ AST: If (Binop (Leq, Int 2, Int 3), Bool false, Bool true)
 
 ---
 
-### 8.3 Task 3 — `let` 基本求值，`subst` 仍是占位（`project3/`，进行中）
+### 8.3 Task 3 — `let` 基本求值，`subst` 仍是占位（`project3/`）
+
+新增改动（在 project2 基础上）：
+- **修改4**：在 `step` 上方新增 `subst` 占位函数（`failwith "TODO: implement substitution"`）
+- **修改5**：`step` 里把 `| Let _ -> failwith ...` 换成两条小步规则
+- **修改6**：`eval_big` 里把 `| Let _ -> failwith ...` 换成大步规则
 
 **测试输入**：`test/simpl_test1.in` → `let x = 3110 in x + x`
 
-**main.ml 设置**：切到 `simpl_test1.in`，启用 `interp`。
+**main.ml 已经配好**：默认 `filename = "test/simpl_test1.in"`，`interp`/`interp_big` 已启用。
 
-**期望输出**：因为 `subst` 还是 `failwith "TODO: implement substitution"`，程序应该崩在那一行：
+**运行**：
+
+```bash
+cd project3
+dune build
+dune exec interpreter_project
+```
+
+**期望输出**：因为 `subst` 还是占位，程序会崩在那一行：
 
 ```
 Fatal error: exception Failure("TODO: implement substitution")
@@ -444,15 +457,12 @@ Fatal error: exception Failure("TODO: implement substitution")
 
 ---
 
-### 8.4 Task 4 — 实现 `subst` 后的完整 SimPL（`project3/`）
+### 8.4 Task 4 — 实现 `subst` 后的完整 SimPL（`project4/`）
 
-**测试输入**：
-- `test/simpl_test1.in` → `let x = 3110 in x + x`
-- `test/simpl_test2.in` → `let y = 6 in let x = 5 * 6 in if x <= 30 - y then x - 1 else y + 1`
-
-> Task 4 阶段建议**把 `simpl_test2.in` 改写成上面这个嵌套 let 版本**（覆盖 `let` + `if` + 算术），原本那个纯 `if` 的可以挪去做单测。
-
-**main.ml 设置**：切到对应文件，启用 `interp` 和 `interp_big`。
+新增改动（在 project3 基础上）：
+- **修改7**：把 `subst` 占位换成真正的递归实现（含常量 / 变量同名与不同名 / Binop / If / Let 同名 shadow 与不同名递归）
+- **修改8**：把测试驱动改成 `run_one` 帮手函数，**依次**跑 `simpl_test1.in` 和 `simpl_test2.in`
+- 同时把 `test/simpl_test2.in` 改成嵌套 let 版本：`let y = 6 in let x = 5 * 6 in if x <= 30 - y then x - 1 else y + 1`
 
 **期望输出**（`simpl_test1.in`）：
 
@@ -483,7 +493,19 @@ AST: Let (y, Int 6, Let (x, Binop (Mul, Int 5, Int 6),
 
 ---
 
-### 8.5 Task 5 — Lambda Calculus 解释器（`project3/`）
+**运行**：
+
+```bash
+cd project4
+dune build
+dune exec interpreter_project
+```
+
+`run_one` 一次跑完两个文件，输出小步 + 大步 + AST 三段，最终验证 `Int 6220` 与 `Int 7`。
+
+---
+
+### 8.5 Task 5 — Lambda Calculus 解释器（`project5/`，待建）
 
 Task 5 需要在 SimPL 的基础上**扩展 AST**（新增 `Fun` 与 `App`）、**扩展 lexer / parser**（新增 `FUN`、`ARROW` 等 token 与函数应用规则），并实现**capture-avoiding substitution**（带 `gensym` 生成新名字）。建议只做大步语义即可。
 
@@ -518,7 +540,7 @@ let () =
 **运行**：
 
 ```bash
-cd project3
+cd project5
 dune build
 dune exec interpreter_project
 ```

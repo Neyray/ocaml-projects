@@ -54,12 +54,14 @@ and step_binop binop v1 v2 = match binop, v1, v2 with
 
 
 (* fully evaluate [e] to a value [v] *)
+(*反复 step 直到变成值*)
 let rec eval (e : expr) : expr =
   if is_value e then e else
-    e |> step |> eval
+    e |> step |> eval   (* ！！！ |> 是 OCaml 的管道运算符，x |> f 等价于 f x。所以 e |> step |> eval 就是 eval (step e)。*)
 
 
 (* interpret [s] by lexing -> parsing -> evaluating and converting the result to a string *)
+(*完整的解释器流水线,这是整个解释器的总入口。*)
 let interp (s : string) : string = 
   s |> parse |> eval |> string_of_expr
 

@@ -318,242 +318,78 @@ let interp_big s = s |> parse |> eval_big |> string_of_expr
 | Task 2 | `if` 语句的求值 | `main.ml`（`step`、`eval_big` 的 `If` 分支） | `project2/` |
 | Task 3 | `let` 语句的基本求值（先放 `subst` 占位） | `main.ml`（`step`、`eval_big` 的 `Let` 分支） | `project3/` |
 | Task 4 | 真正实现 `subst`（替换） | `main.ml` | `project4/` |
-| Task 5 | Lambda Calculus 解释器 + capture-avoiding subst | 全套文件 | `project5/`（待建） |
+| Task 5 | Lambda Calculus 解释器 + capture-avoiding subst | 全套文件 | `project5/` |
 
 ---
 
-## 8. 怎么测试 Task 1–5
+## 8. 怎么测试
 
-每个 project 目录都是一个独立的 dune 工程，结构相同：
+> 本节只讲 **怎么跑** 和 **每个 project 在测什么**。各 Task 的实现细节、修改逐项说明、踩坑解释等，请看 [`project5/README.md`](project5/README.md)（累积版，覆盖 Task 1~5 的全部修改）。
+
+### 8.1 通用流程
+
+每个 `projectN/` 都是一个独立的 dune 工程，结构一致：
 
 ```
 projectN/
-├── bin/main.ml                    # 入口（含 string_of_expr / parse / eval / interp 等）
-├── lib/                           # ast.ml, lexer.mll, parser.mly
-└── test/
-    ├── simpl_test1.in             # 测试输入 1（Task 1/3/4 用）
-    ├── simpl_test2.in             # 测试输入 2（Task 2/4 用）
-    └── lambda_test1.in ~ 5.in     # Lambda 测试（Task 5 用）
+├── bin/main.ml          # 入口：含 string_of_expr / parse / eval / interp / 测试驱动
+├── lib/                 # ast.ml, lexer.mll, parser.mly
+└── test/                # 测试输入文件
 ```
 
-### 8.0 通用流程
+测试三步走：
 
 ```bash
-cd projectN          # N = 1, 2, 3
-dune build           # 编译
-dune exec interpreter_project       # 运行
+cd projectN
+dune build                       # 编译（首次需 opam install menhir）
+dune exec interpreter_project    # 跑入口里的 let () = ...
 ```
 
-`bin/main.ml` 末尾有一段"驱动代码"，控制读哪个测试文件、调用 `interp` / `interp_big` 还是只打印 AST。**测试不同 Task 时只需调整这两处**：
+如果改了 `parser.mly` / `lexer.mll` 后看不到效果，删 `_build/` 再 build。
 
-```ocaml
-let () =
-  let filename = "test/simpl_test1.in" in       (* ① 切换测试文件 *)
-  (* let filename = "test/simpl_test2.in" in *)
-  ...
-  (* ② 用注释块控制是否调用 interp / interp_big *)
-  (* let res = interp file_content in
-     Printf.printf "Result of interpreting %s:\n%s\n\n" filename res;
-     let res = interp_big file_content in
-     Printf.printf "Result of interpreting %s with big-step model:\n%s\n\n" filename res; *)
+### 8.2 每个 project 在测什么
 
-  let ast = parse file_content in
-  Printf.printf "AST: %s\n" (string_of_expr ast)
-```
+| Project | 测试文件 | 在测什么 | 期望输出 |
+|---|---|---|---|
+| **project1** | `simpl_test1.in`：`let x = 3110 in x + x` | parser 能否把 SimPL 源码翻译成 AST（**不求值**） | `AST: Let (x, Int 3110, Binop (Add, Var x, Var x))` |
+| **project2** | `simpl_test2.in`：`if 2 <= 3 then false else true` | `If` 的 small-step + big-step 是否都能选到正确分支 | `Bool false`（小步、大步、AST 各打印一行） |
+| **project3** | `simpl_test1.in`：`let x = 3110 in x + x` | `Let` 规则是否已正确调用 `subst`（此时仍是占位） | `Fatal error: exception Failure("TODO: implement substitution")` — **崩溃是预期行为**，证明 `Let` 路径打通到 `subst` |
+| **project4** | `simpl_test1.in` + `simpl_test2.in` | 真正的 `subst` 已就位，完整 SimPL 求值 | `Int 6220`（嵌套加法）和 `Int 7`（嵌套 let + if + binop） |
+| **project5** | 上述两个 SimPL + `lambda_test1.in`~`lambda_test5.in` | lambda calculus 的解析、call-by-value β-归约、capture-avoiding `subst` | 见下表 |
 
-> 切换测试文件 = 移动那行注释；启用求值 = 去掉 `interp` / `interp_big` 那段注释。
+project5 五个 lambda 样例的期望：
 
----
-
-### 8.1 Task 1 — 仅解析（`project1/`）
-
-**测试输入**：
-- `test/simpl_test1.in` → `let x = 3110 in x + x`
-- `test/simpl_test2.in` → `if x <= 3 then true else false`
-
-**main.ml 设置**：保持默认，只 `parse` + `string_of_expr`（`interp` / `interp_big` 那段注释**不要去掉**，因为求值还没实现）。
-
-**运行**：
-
-```bash
-cd project1
-dune build
-dune exec interpreter_project
-```
-
-**期望输出**（`simpl_test1.in`）：
-
-```
-AST: Let (x, Int 3110, Binop (Add, Var x, Var x))
-```
-
-切到 `simpl_test2.in` 再跑一次，期望：
-
-```
-AST: If (Binop (Leq, Var x, Int 3), Bool true, Bool false)
-```
-
----
-
-### 8.2 Task 2 — `if` 求值（`project2/`）
-
-**测试输入**：
-- `test/simpl_test2.in` → `if 2 <= 3 then false else true`（Task 2 重点）
-
-**main.ml 设置**：
-1. 把 `filename` 切到 `simpl_test2.in`
-2. **去掉 `interp` / `interp_big` 那段注释**，让小步与大步求值都打印出来
-
-**运行**：
-
-```bash
-cd project2
-dune build
-dune exec interpreter_project
-```
-
-**期望输出**：
-
-```
-Result of interpreting test/simpl_test2.in:
-Bool false
-
-Result of interpreting test/simpl_test2.in with big-step model:
-Bool false
-
-AST: If (Binop (Leq, Int 2, Int 3), Bool false, Bool true)
-```
-
-> 注意：此版本还没实现 `Let` 的求值，所以**不要**在 Task 2 阶段对 `simpl_test1.in`（含 `let`）启用 `interp`，会 `failwith "TODO: Task 3"`。
-
----
-
-### 8.3 Task 3 — `let` 基本求值，`subst` 仍是占位（`project3/`）
-
-新增改动（在 project2 基础上）：
-- **修改4**：在 `step` 上方新增 `subst` 占位函数（`failwith "TODO: implement substitution"`）
-- **修改5**：`step` 里把 `| Let _ -> failwith ...` 换成两条小步规则
-- **修改6**：`eval_big` 里把 `| Let _ -> failwith ...` 换成大步规则
-
-**测试输入**：`test/simpl_test1.in` → `let x = 3110 in x + x`
-
-**main.ml 已经配好**：默认 `filename = "test/simpl_test1.in"`，`interp`/`interp_big` 已启用。
-
-**运行**：
-
-```bash
-cd project3
-dune build
-dune exec interpreter_project
-```
-
-**期望输出**：因为 `subst` 还是占位，程序会崩在那一行：
-
-```
-Fatal error: exception Failure("TODO: implement substitution")
-```
-
-这说明 `step` / `eval_big` 的 `Let` 分支**已经走到了 `subst` 调用**——正是 Task 3 想验证的事。
-
----
-
-### 8.4 Task 4 — 实现 `subst` 后的完整 SimPL（`project4/`）
-
-新增改动（在 project3 基础上）：
-- **修改7**：把 `subst` 占位换成真正的递归实现（含常量 / 变量同名与不同名 / Binop / If / Let 同名 shadow 与不同名递归）
-- **修改8**：把测试驱动改成 `run_one` 帮手函数，**依次**跑 `simpl_test1.in` 和 `simpl_test2.in`
-- 同时把 `test/simpl_test2.in` 改成嵌套 let 版本：`let y = 6 in let x = 5 * 6 in if x <= 30 - y then x - 1 else y + 1`
-
-**期望输出**（`simpl_test1.in`）：
-
-```
-Result of interpreting test/simpl_test1.in:
-Int 6220
-
-Result of interpreting test/simpl_test1.in with big-step model:
-Int 6220
-
-AST: Let (x, Int 3110, Binop (Add, Var x, Var x))
-```
-
-**期望输出**（嵌套 let 版 `simpl_test2.in`）：
-
-```
-Result of interpreting test/simpl_test2.in:
-Int 7
-
-Result of interpreting test/simpl_test2.in with big-step model:
-Int 7
-
-AST: Let (y, Int 6, Let (x, Binop (Mul, Int 5, Int 6),
-     If (Binop (Leq, Var x, Binop (Sub, Int 30, Var y)),
-         Binop (Sub, Var x, Int 1),
-         Binop (Add, Var y, Int 1))))
-```
-
----
-
-**运行**：
-
-```bash
-cd project4
-dune build
-dune exec interpreter_project
-```
-
-`run_one` 一次跑完两个文件，输出小步 + 大步 + AST 三段，最终验证 `Int 6220` 与 `Int 7`。
-
----
-
-### 8.5 Task 5 — Lambda Calculus 解释器（`project5/`，待建）
-
-Task 5 需要在 SimPL 的基础上**扩展 AST**（新增 `Fun` 与 `App`）、**扩展 lexer / parser**（新增 `FUN`、`ARROW` 等 token 与函数应用规则），并实现**capture-avoiding substitution**（带 `gensym` 生成新名字）。建议只做大步语义即可。
-
-**测试输入**（写到 `test/lambda_test1.in` ~ `lambda_test5.in`）：
-
-| 文件 | 内容 | 期望结果 |
+| 文件 | 内容 | 期望 |
 |---|---|---|
-| `lambda_test1.in` | `(fun x -> x) (fun y -> y)` | `Fun (y, Var y)`（即 `fun y -> y`） |
-| `lambda_test2.in` | `(fun x -> fun x -> x) (fun a -> fun b -> a) (fun a -> fun b -> b)` | `fun a -> fun b -> b` |
-| `lambda_test3.in` | `((fun x -> (fun z -> x)) z) (fun x -> x)` | 抛 `Unbound variable`（自由变量 `z`） |
+| `lambda_test1.in` | `(fun x -> x) (fun y -> y)` | `Fun (y, Var y)` |
+| `lambda_test2.in` | `(fun x -> fun x -> x) (fun a -> fun b -> a) (fun a -> fun b -> b)` | `Fun (a, Fun (b, Var b))` |
+| `lambda_test3.in` | `((fun x -> (fun z -> x)) z) (fun x -> x)` | `Failure(Unbound variable)`（含未绑定 `z`） |
 | `lambda_test4.in` | `(fun y -> y + 1) 5` | `Int 6` |
 | `lambda_test5.in` | `(fun x -> let y = 6 in let x = 5 * 6 in if x <= 30 - y then x - 1 else y + 2) 10` | `Int 8` |
 
-**main.ml 设置**：建议把驱动改成"依次跑所有 lambda 测试文件"。例如：
+### 8.3 测试驱动函数
 
-```ocaml
-let () =
-  let files = [
-    "test/lambda_test1.in"; "test/lambda_test2.in"; "test/lambda_test3.in";
-    "test/lambda_test4.in"; "test/lambda_test5.in";
-  ] in
-  List.iter (fun f ->
-    let ic = open_in f in
-    let s = really_input_string ic (in_channel_length ic) in
-    close_in ic;
-    Printf.printf "=== %s ===\nInput: %s\n" f (String.trim s);
-    (try Printf.printf "Result: %s\n\n" (interp_big s)
-     with Failure msg -> Printf.printf "Exception: %s\n\n" msg)
-  ) files
-```
+不同阶段 `bin/main.ml` 末尾的 `let () = ...` 写法略有不同：
 
-**运行**：
+- **project1**：只调 `parse` + `string_of_expr` 打印 AST，不调 `interp`（因为 Task 1 没有求值能力）。
+- **project2 / 3**：直接展开 `open_in` + `interp` + `interp_big` + `print AST`，一个文件一组输出。
+- **project4 / 5**：抽出了 `run_one` 辅助函数（project5 还多一个 `run_lambda`，带 `try…with` 兜底以便测 unbound 样例不中断）。
 
-```bash
-cd project5
-dune build
-dune exec interpreter_project
-```
+要加一个新测试，只需：
 
----
+1. 把源码放到 `test/your_test.in`；
+2. 在 `let () = ...` 里加一行 `run_one "test/your_test.in"`（或 `run_lambda` 给可能抛错的）；
+3. `dune build && dune exec interpreter_project`。
 
-### 8.6 测试遇到问题时的排查清单
+### 8.4 测试遇到问题时的排查清单
 
 | 现象 | 可能原因 |
 |---|---|
-| `Pattern matching failed` | `match ... with` 嵌套没加括号，把后面的分支吞了 → 用 `(match ... with ...)` 或 `begin match ... end` |
-| `Operator and operand type mismatch` | `step_binop` / `eval_bop` 收到了非 `Int` 操作数（比如 `Bool` 出现在算术里） |
-| `Unbound variable` | 走到了 `Var _` 分支——要么 Task 3/4 的 `subst` / `let` 还没接好，要么源码里真的有自由变量 |
-| `TODO: implement substitution` | 进度正常，Task 4 还没做 |
+| `Pattern matching failed` | `match … with` 嵌套没加括号，把后面的分支吞了 → 用 `(match … with …)` 或 `begin match … end` |
+| `Operator and operand type mismatch` | `step_binop` / `eval_bop` 收到了非 `Int` 操作数（如 `Bool` 出现在算术里） |
+| `Unbound variable` | 走到了 `Var _` 分支——`Let` / `subst` 没接好，或源码里真的有自由变量（lambda_test3 就是预期会触发） |
+| `TODO: implement substitution` | 进度正常，Task 4 才会实现 `subst`，project3 跑出来就该是这条 |
 | `dune: command not found` | 没进 opam 环境，先 `eval $(opam env)` |
+| `menhir not found` | `opam install menhir` |
 | 改了 `parser.mly` / `lexer.mll` 没生效 | 删 `_build/` 后再 `dune build` |
+| menhir 报 `shift/reduce conflicts arbitrarily resolved` | project5 的 `expr / app / simple` 三层文法天然有 4 个冲突；menhir 默认 shift 行为刚好就是我们想要的左结合 application，**不影响正确性** |

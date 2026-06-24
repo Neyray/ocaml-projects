@@ -5,6 +5,7 @@ let rec decode lst=
   match count with
   | 0 -> lst
   | _ -> add (count-1) target (target::lst) in   (*往头部塞，效率更高*)
+  
   let rec aux acc lst=
   match lst with
   | [] -> List.rev acc

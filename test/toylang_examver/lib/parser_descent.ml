@@ -1,4 +1,3 @@
-(*4.语法分析*)
 (** Recursive descent parser for ToyLang *)
 
 open Ast
@@ -10,8 +9,6 @@ let (lexbuf : Lexing.lexbuf ref) = ref (Lexing.from_string "")
 
 (** Helper functions *)
 
-
-(*向前读一个token*)
 let advance_token () : unit = next_token := Lexer.read !lexbuf
 
 let expect (token : token) : unit =
@@ -33,9 +30,8 @@ and parse_stmt_seq () : stmt_seq =
   match !next_token with
   | IF | REPEAT | PRINT | ID _ ->
     let stmt = parse_stmt () in
-    expect SEMICOLON;   (*expect函数进行模式匹配,成功就调用advance_token函数，失败了就报错*)
-    stmt::parse_stmt_seq()  (*吃完分号继续看下一条*)
-    (*每解析完「一条语句 + 分号」，就再回头看 next_token 是不是又一条语句的开头*)
+    expect SEMICOLON;
+    [ stmt ]
     (* TODO: Handle statement sequence with multiple statements *)
   | _ -> []
 
@@ -49,34 +45,9 @@ and parse_stmt () : stmt =
     failwith
       (Printf.sprintf "Expected statement but found %s" (string_of_token !next_token))
 
-and parse_if_stmt () : stmt =
-  expect IF;
-  let cond = parse_exp () in
-  expect THEN;
-  let then_body = parse_stmt_seq () in
-  (match !next_token with
-   | ELSE -> advance_token ();   (*advance_token是自定义函数，读取后一个字符*)
-             let else_body = parse_stmt_seq () in
-             expect END; IfStmt (cond, then_body, Some else_body)
-   | _    -> expect END; IfStmt (cond, then_body, None))
-
-
-
-and parse_repeat_stmt () : stmt =
-  expect REPEAT;
-  let body = parse_stmt_seq () in
-  expect UNTIL;
-  let cond = parse_exp () in
-  RepeatStmt (body, cond)
-
-
-
-and parse_print_stmt () : stmt =
-  expect PRINT;
-  PrintStmt (parse_exp ())
-
-
-
+and parse_if_stmt () : stmt = failwith "TODO: Parse if statement"
+and parse_repeat_stmt () : stmt = failwith "TODO: Parse repeat statement"
+and parse_print_stmt () : stmt = failwith "TODO: Parse print statement"
 
 and parse_assign_stmt () : stmt =
   let lval =
@@ -92,17 +63,7 @@ and parse_assign_stmt () : stmt =
   let rval = parse_exp () in
   AssignStmt (lval, rval)
 
-
-
-
-and parse_exp () : exp =                         (* exp 比 simple_exp 多一层比较 *)
-  let left = parse_simple_exp () in
-  (match !next_token with
-   | LT -> advance_token (); BinaryExp (left, LtOp, parse_simple_exp ())
-   | EQ -> advance_token (); BinaryExp (left, EqOp, parse_simple_exp ())
-   | _  -> left)
-
-
+and parse_exp () : exp = failwith "TODO: Parse expression"
 
 and parse_simple_exp () : exp =
   let rec parse_rest left =
@@ -120,9 +81,6 @@ and parse_simple_exp () : exp =
   let left = parse_term () in
   parse_rest left
 
-
-
-
 and parse_term () : exp =
   let rec parse_rest left =
     match !next_token with
@@ -139,19 +97,7 @@ and parse_term () : exp =
   let left = parse_factor () in
   parse_rest left
 
-
-
-
-and parse_factor () : exp =
-  match !next_token with
-  | LPAREN -> advance_token ();
-              let e = parse_exp () in expect RPAREN; e
-  | NUM n  -> advance_token (); IntExp n
-  | ID s   -> advance_token (); VarRefExp s
-  | TRUE   -> advance_token (); BoolExp true
-  | FALSE  -> advance_token (); BoolExp false
-  | _ -> failwith (Printf.sprintf "Expected factor but found %s"
-                     (string_of_token !next_token))
+and parse_factor () : exp = failwith "TODO: Parse factor"
 
 (** Entry function *)
 

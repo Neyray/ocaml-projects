@@ -1,3 +1,4 @@
+(*1.奇偶分类*)
 let rec separate_by_parity lst=
   let rec aux (acc1,acc2) lst=
   match lst with

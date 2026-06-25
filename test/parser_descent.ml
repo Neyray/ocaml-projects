@@ -10,8 +10,6 @@ let (lexbuf : Lexing.lexbuf ref) = ref (Lexing.from_string "")
 
 (** Helper functions *)
 
-
-(*向前读一个token*)
 let advance_token () : unit = next_token := Lexer.read !lexbuf
 
 let expect (token : token) : unit =
@@ -33,7 +31,7 @@ and parse_stmt_seq () : stmt_seq =
   match !next_token with
   | IF | REPEAT | PRINT | ID _ ->
     let stmt = parse_stmt () in
-    expect SEMICOLON;   (*expect函数进行模式匹配,成功就调用advance_token函数，失败了就报错*)
+    expect SEMICOLON;   (*这是什么意思？*)
     stmt::parse_stmt_seq()  (*吃完分号继续看下一条*)
     (*每解析完「一条语句 + 分号」，就再回头看 next_token 是不是又一条语句的开头*)
     (* TODO: Handle statement sequence with multiple statements *)
@@ -55,7 +53,7 @@ and parse_if_stmt () : stmt =
   expect THEN;
   let then_body = parse_stmt_seq () in
   (match !next_token with
-   | ELSE -> advance_token ();   (*advance_token是自定义函数，读取后一个字符*)
+   | ELSE -> advance_token ();   (*advance_token是什么？*)
              let else_body = parse_stmt_seq () in
              expect END; IfStmt (cond, then_body, Some else_body)
    | _    -> expect END; IfStmt (cond, then_body, None))

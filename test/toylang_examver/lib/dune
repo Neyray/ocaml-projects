@@ -1,0 +1,7 @@
+(ocamllex lexer)
+
+(ocamlyacc parser_yacc)
+
+(library
+ (name toylanglib)
+ (modules lexer token ast parser_yacc parser_descent typechecker interpreter))

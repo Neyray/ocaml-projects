@@ -1,7 +1,8 @@
+(*2.最长连续递增段*)
 let rec longest_rising_run lst=
   let rec aux acc count max_length lst=
   match lst with
-  | [] -> max_length
+  | [] -> max count max_length   (*在末尾也要进行比较！*)
   | x::t -> 
     match acc with
     | [] -> aux (x::acc) (count+1) max_length t

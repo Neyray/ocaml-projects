@@ -9,4 +9,3 @@ let rec longest_rising_run lst=
     | h::v -> if x>h then aux (x::acc) (count+1) (max count max_length) t
     else aux (x::acc) 1 (max count max_length) t  
   in aux [] 0 0 lst
-

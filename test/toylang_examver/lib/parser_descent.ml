@@ -31,7 +31,7 @@ and parse_stmt_seq () : stmt_seq =
   | IF | REPEAT | PRINT | ID _ ->
     let stmt = parse_stmt () in
     expect SEMICOLON;
-    [ stmt ]
+    stmt::parse_stmt_seq()
     (* TODO: Handle statement sequence with multiple statements *)
   | _ -> []
 
@@ -45,9 +45,32 @@ and parse_stmt () : stmt =
     failwith
       (Printf.sprintf "Expected statement but found %s" (string_of_token !next_token))
 
-and parse_if_stmt () : stmt = failwith "TODO: Parse if statement"
-and parse_repeat_stmt () : stmt = failwith "TODO: Parse repeat statement"
-and parse_print_stmt () : stmt = failwith "TODO: Parse print statement"
+and parse_if_stmt () : stmt = 
+  expect IF;
+  let cond=parse_exp () in 
+  expect THEN;(*expect里面含有advance_token，如果是match !new_token with，那么就需要调用advance_token函数*)
+  let then_body=parse_stmt_seq () in
+  match !next_token with
+  | ELSE -> advance_token ();
+            let else_body=parse_stmt_seq () in
+            expect END;
+            IfStmt (cond,then_body,Some else_body)
+  | _ -> expect END;IfStmt (cond,then_body,None)
+
+
+and parse_repeat_stmt () : stmt =
+  expect REPEAT;
+  let body=parse_stmt_seq () in
+  expect UTIL;
+  let cond=parse_exp () in
+  RepeatStmt (body,cond)
+
+
+
+and parse_print_stmt () : stmt = 
+  expect PRINT;
+  let body=parse_exp () in
+  PrintStmt body 
 
 and parse_assign_stmt () : stmt =
   let lval =
@@ -63,7 +86,11 @@ and parse_assign_stmt () : stmt =
   let rval = parse_exp () in
   AssignStmt (lval, rval)
 
-and parse_exp () : exp = failwith "TODO: Parse expression"
+and parse_exp () : exp = 
+  let left=parse_simple_exp () in
+  match !next_token with
+  | LT -> advance_token ();BinaryExp (left,LtOp,parse_simple_exp ())
+  | EQ -> advance_token ();BinaryExp (left,EqOp,parse_simple_exp ())
 
 and parse_simple_exp () : exp =
   let rec parse_rest left =
@@ -97,7 +124,16 @@ and parse_term () : exp =
   let left = parse_factor () in
   parse_rest left
 
-and parse_factor () : exp = failwith "TODO: Parse factor"
+and parse_factor () : exp =
+  match !next_token with
+  | LPAREN -> advance_token();
+              let s=parse_exp () in
+              expect RPAREN; s 
+  | NUM n -> advance_token ();IntExp n
+  | ID n -> advance_token ();VarRefExp n 
+  | TRUE -> advance_token ();Bool true
+  | FALSE -> advance_token () Bool false 
+  | _ -> failwith "Expected factor but found %s " ^ !next_token 
 
 (** Entry function *)
 
